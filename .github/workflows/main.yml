@@ -2,9 +2,12 @@ name: NISA Monitor
 
 on:
   schedule:
-    # 毎日日本時間の22時00分（世界標準時の13時00分）に自動実行する設定
     - cron: '0 13 * * *'
-  workflow_dispatch: # 手動で動かすためのスイッチ
+  workflow_dispatch:
+
+# ↓↓↓ この2行を追加することで、書き込み権限（Write）を直接許可できます ↓↓↓
+permissions:
+  contents: write
 
 jobs:
   run-monitor:
