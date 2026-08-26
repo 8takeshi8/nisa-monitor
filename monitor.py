@@ -3,9 +3,9 @@ import os
 import re
 import requests
 
-DISCORD_WEBHOOK_URL = "[https://discord.com/api/webhooks/1542006630718251039/tTiMPHNK5-0qLgWxnddn4WhGGaf13a-4mnBYWTIaMGSj6OE3UgqXSK21V2UZts_N6IT-](https://discord.com/api/webhooks/1542006630718251039/tTiMPHNK5-0qLgWxnddn4WhGGaf13a-4mnBYWTIaMGSj6OE3UgqXSK21V2UZts_N6IT-)"
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1542006630718251039/tTiMPHNK5-0qLgWxnddn4WhGGaf13a-4mnBYWTIaMGSj6OE3UgqXSK21V2UZts_N6IT-"
 
-# 新しいグラデーション配分ルール（150万円）
+# 150万円の買い増しグラデーションルール
 FUNDS_DATA = {
     "オルカン": {
         "code": "0331418A", "high_price": 39019, "fired_triggers": [],
@@ -51,16 +51,18 @@ FUNDS_DATA = {
 
 def get_real_nav_secure(fund_code):
     try:
-        api_url = f"[https://fwg.ne.jp/fund/detail/](https://fwg.ne.jp/fund/detail/){fund_code}"
-        res = requests.get(api_url, timeout=15)
+        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+        api_url = f"https://fwg.ne.jp/fund/detail/{fund_code}"
+        res = requests.get(api_url, headers=headers, timeout=15)
         price_match = re.search(r'<span class="num">([0-9,]+)</span>\s*<span class="unit">円</span>', res.text)
         date_match = re.search(r'<dt class="date">基準日\s*:\s*([0-9/・]+)</dt>', res.text)
         if price_match:
             price = int(price_match.group(1).replace(",", ""))
             base_date = date_match.group(1).replace("・", "/") if date_match else datetime.date.today().strftime("%Y/%m/%d")
             return price, base_date
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"取得エラー ({fund_code}): {e}")
+    
     backup_prices = {"0331418A": 39019, "03311189": 45727, "29313233": 29378, "9C31118B": 101036}
     return backup_prices.get(fund_code, 10000), datetime.date.today().strftime("%Y/%m/%d")
 
@@ -82,7 +84,7 @@ def main():
         current_high = info["high_price"]
         fired_list = info["fired_triggers"]
 
-        # 高値更新時の自動書き換え判定
+        # 高値更新時
         if price > current_high:
             pattern_high = rf'("{name}":\s*\{{[^}}]*"high_price":\s*)([0-9]+)'
             file_content = re.sub(pattern_high, rf'\g<1>{price}', file_content)
@@ -95,7 +97,7 @@ def main():
         drop_rate = (price - current_high) / current_high
         drop_percent = drop_rate * 100
 
-        # 次の目標トリガーを探す
+        # 次の買い増しターゲット選定
         next_trigger = None
         for t in info["triggers"]:
             if drop_rate > t["drop"]:
@@ -106,16 +108,15 @@ def main():
 
         target_price = int(current_high * (1 + next_trigger["drop"]))
         diff_price = max(0, price - target_price)
-        amount_display = f"{next_trigger['amount']:,}円"
 
         report_msg += (
             f"🔹 **{name}**\n"
             f"現在価格：{price:,}円 (高値から {drop_percent:.2f}%)\n"
             f"次の目標：{target_price:,}円 ({int(next_trigger['drop']*100)}%)\n"
-            f"➔ あと **{diff_price:,}円** 下落で発動（投入：{amount_display}）\n\n"
+            f"➔ あと **{diff_price:,}円** 下落で発動（投入：{next_trigger['amount']:,}円）\n\n"
         )
 
-        # 買い増しシグナル判定
+        # 買い増し判定
         for trigger in info["triggers"]:
             target_drop = trigger["drop"]
             drop_int = int(target_drop * 100)
@@ -139,17 +140,17 @@ def main():
                 )
                 requests.post(DISCORD_WEBHOOK_URL, json={"content": signal_msg})
 
-    # レポート通知
+    # レポート送信
     requests.post(DISCORD_WEBHOOK_URL, json={"content": report_msg})
 
-    # 高値更新・フラグ追加があればGitHubへPush
+    # 高値更新等で書き換えが生じた場合のみgit push
     if file_changed and file_content:
         with open("monitor.py", "w", encoding="utf-8") as f:
             f.write(file_content)
         os.system('git config --global user.name "GitHub Actions"')
         os.system('git config --global user.email "actions@github.com"')
         os.system('git add monitor.py')
-        os.system('git commit -m "🤖 自動システム：高値更新または通知済フラグのアップデート"')
+        os.system('git commit -m "🤖 自動更新：高値更新またはフラグ更新"')
         os.system('git push')
 
 if __name__ == "__main__":
