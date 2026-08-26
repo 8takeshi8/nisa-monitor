@@ -1,0 +1,26 @@
+name: NISA Monitor
+
+on:
+  schedule:
+    # 毎日日本時間の22時00分（世界標準時の13時00分）に自動実行する設定
+    - cron: '0 13 * * *'
+  workflow_dispatch: # 手動で動かすためのスイッチ
+
+jobs:
+  run-monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: コードを読み込み
+        uses: actions/checkout@v4
+
+      - name: Pythonの準備
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: ライブラリのインストール
+        run: |
+          pip install -r requirements.txt
+
+      - name: プログラム実行
+        run: python monitor.py
