@@ -8,7 +8,7 @@ DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1542006630718251039/tTiM
 # 150万円の買い増しグラデーションルール
 FUNDS_DATA = {
     "オルカン": {
-        "code": "0331418A", "high_price": 100, "fired_triggers": [],
+        "code": "0331418A", "high_price": 39019, "fired_triggers": [],
         "triggers": [
             {"drop": -0.10, "amount": 30000},  {"drop": -0.15, "amount": 30000},
             {"drop": -0.20, "amount": 48000},  {"drop": -0.25, "amount": 60000},
