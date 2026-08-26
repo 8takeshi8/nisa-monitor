@@ -66,7 +66,6 @@ def main():
     file_changed = False
     with open("monitor.py", "r", encoding="utf-8") as f: file_content = f.read()
 
-    # 毎日送る進捗レポート用の文章の土台
     today_str = datetime.date.today().strftime("%Y/%m/%d")
     report_msg = f"📊 【日次】NISA買い増し監視レポート\n基準日：{today_str}\n\n"
 
@@ -74,7 +73,6 @@ def main():
         price, base_date = get_real_nav_secure(info["code"])
         current_high = info["high_price"]; fired_list = info["fired_triggers"]
 
-        # 新高値更新時の処理
         if price > current_high:
             pattern_high = rf'("{name}":\s*\{{[^}}]*"high_price":\s*)([0-9]+)'
             file_content = re.sub(pattern_high, rf'\g<1>{price}', file_content)
@@ -85,19 +83,17 @@ def main():
         drop_rate = (price - current_high) / current_high
         drop_percent = drop_rate * 100
 
-        # 次の目標トリガーを探す
         next_trigger = None
         for t in info["triggers"]:
             if drop_rate > t["drop"]:
                 next_trigger = t
                 break
-        if next_trigger is None: next_trigger = info["triggers"][0]
+        if next_trigger is None: next_trigger = info["triggers"]
 
         target_price = int(current_high * (1 + next_trigger["drop"]))
         diff_price = max(0, price - target_price)
         amount_display = str(next_trigger["amount"]) if isinstance(next_trigger["amount"], str) else f"{next_trigger['amount']:,}円"
 
-        # レポート文章の組み立て
         report_msg += (
             f"🔹 **{name}**\n"
             f"現在価格：{price:,}円 (高値から {drop_percent:.2f}%)\n"
@@ -105,7 +101,6 @@ def main():
             f"➔ あと **{diff_price:,}円** 下落で発動（投入：{amount_display}）\n\n"
         )
 
-        # 暴落シグナルの判定
         for trigger in info["triggers"]:
             target_drop = trigger["drop"]; drop_int = int(target_drop * 100)
             if drop_rate <= target_drop and drop_rate > (target_drop - 0.05):
@@ -116,11 +111,9 @@ def main():
                 file_content = re.sub(pattern_add_fired, rf'\g<1>{new_fired_str}', file_content)
                 file_changed = True
                 
-                # 暴落時は緊急通知を別で飛ばす
                 signal_msg = (f"🔴【買い増しシグナル】{name}\n基準日：{base_date}\nSBI基準価額：{price:,}円\n設定高値：{current_high:,}円\n高値から：{drop_percent:.2f}%\n\n{drop_int}%買い増しポイント到達\n💰今回買う額：{trigger['amount']:,}円")
                 requests.post(DISCORD_WEBHOOK_URL, json={"content": signal_msg})
 
-    # 毎日必ず進捗レポートをDiscordに送信
     requests.post(DISCORD_WEBHOOK_URL, json={"content": report_msg})
 
     if file_changed:
