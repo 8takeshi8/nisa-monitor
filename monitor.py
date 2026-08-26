@@ -3,7 +3,7 @@ import os
 import re
 import requests
 
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1542006630718251039/tTiMPHNK5-0qLgWxnddn4WhGGaf13a-4mnBYWTIaMGSj6OE3UgqXSK21V2UZts_N6IT-"
+DISCORD_WEBHOOK_URL = "[https://discord.com/api/webhooks/1542006630718251039/tTiMPHNK5-0qLgWxnddn4WhGGaf13a-4mnBYWTIaMGSj6OE3UgqXSK21V2UZts_N6IT-](https://discord.com/api/webhooks/1542006630718251039/tTiMPHNK5-0qLgWxnddn4WhGGaf13a-4mnBYWTIaMGSj6OE3UgqXSK21V2UZts_N6IT-)"
 
 # 新しいグラデーション配分ルール（150万円）
 FUNDS_DATA = {
@@ -51,7 +51,7 @@ FUNDS_DATA = {
 
 def get_real_nav_secure(fund_code):
     try:
-        api_url = f"https://fwg.ne.jp/fund/detail/{fund_code}"  # URL構造の明確化
+        api_url = f"[https://fwg.ne.jp/fund/detail/](https://fwg.ne.jp/fund/detail/){fund_code}"
         res = requests.get(api_url, timeout=15)
         price_match = re.search(r'<span class="num">([0-9,]+)</span>\s*<span class="unit">円</span>', res.text)
         date_match = re.search(r'<dt class="date">基準日\s*:\s*([0-9/・]+)</dt>', res.text)
@@ -154,5 +154,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-```
